@@ -1,5 +1,27 @@
-FROM openjdk:8-jdk
+FROM ubuntu:16.10
 
+# install docker and docker-compose
+RUN apt-get update
+RUN apt-get install -y \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    software-properties-common --fix-missing
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+RUN add-apt-repository \
+    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+    $(lsb_release -cs) \
+    stable"
+RUN apt-get update
+RUN apt-get install -y docker-ce
+RUN curl -o /usr/local/bin/docker-compose -L "https://github.com/docker/compose/releases/download/1.11.2/docker-compose-$(uname -s)-$(uname -m)"
+RUN chmod +x /usr/local/bin/docker-compose
+
+#install java
+RUN apt-get install -y default-jdk
+
+
+# install jenkins
 RUN apt-get update && apt-get install -y git curl && rm -rf /var/lib/apt/lists/*
 
 ENV JENKINS_HOME /var/jenkins_home
@@ -59,6 +81,14 @@ EXPOSE 8080
 EXPOSE 50000
 
 ENV COPY_REFERENCE_FILE_LOG $JENKINS_HOME/copy_reference_file.log
+
+# allow jenkins to run docker containers with sudo
+USER root
+RUN apt-get update \
+      && apt-get install -y sudo \
+      && rm -rf /var/lib/apt/lists/*
+RUN echo "jenkins ALL=NOPASSWD: ALL" >> /etc/sudoers
+RUN usermod -a -G docker jenkins
 
 USER ${user}
 
